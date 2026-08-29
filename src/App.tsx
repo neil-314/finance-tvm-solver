@@ -26,7 +26,7 @@ export default function App() {
   const isMoney = target !== "RATE" && target !== "NPER";
   const formatResult = (value: number) => !Number.isFinite(value) ? "Check your inputs" : isMoney ? value.toLocaleString("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 2 }) : `${value.toFixed(2)}${target === "RATE" ? "%" : " years"}`;
   return <main>
-    <header><div className="brand"><span>NT</span> NORTHSTAR FINANCE</div><div className="live">● EDUCATIONAL CALCULATOR</div></header>
+    <header><div className="brand"><span>N</span> NEIL'S TVM LAB</div><div className="live">● EDUCATIONAL CALCULATOR</div></header>
     <section className="hero"><p className="eyebrow">TIME VALUE OF MONEY, MADE SIMPLE</p><h1>See how money changes<br /><em>over time.</em></h1><p>This learning tool shows the answer, formula, and steps together so you can understand the math—not just get a number.</p></section>
     <section className="quick-start" aria-labelledby="quick-start-title"><div><p className="eyebrow">START HERE</p><h2 id="quick-start-title">How to use the solver</h2></div><ol><li><b>Choose what is unknown.</b><span>Select PV, FV, PMT, RATE, or NPER.</span></li><li><b>Enter what you know.</b><span>Use positive numbers for money coming in and negative numbers for money going out.</span></li><li><b>Read the explanation.</b><span>Your result, formula, and substituted steps update instantly.</span></li></ol></section>
     <section className="preset-row" aria-label="Example scenarios">{Object.entries(presets).map(([name, preset]) => <button onClick={() => setInputs(preset)} key={name}>↗ Try {name}</button>)}</section>
