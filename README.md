@@ -20,3 +20,14 @@ Choose the unknown variable, enter the four values you know, and the page update
 
 Cash flows use a standard sign convention: money received is positive, while money contributed or repaid is negative. Results are for learning and demonstration only, not financial advice.
 
+## Features
+
+- Guided three-step introduction for first-time users
+- Monthly and annual compounding
+- Ordinary annuity and annuity-due payment timing
+- Mortgage, investment, and retirement examples
+- Visible formula, substitution steps, and cash-flow timeline
+- Calculation logic separated into `src/finance.ts`
+- Responsive layout and accessible form labels
+
+## Run locally
