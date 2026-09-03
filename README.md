@@ -42,3 +42,6 @@ To create and check a production build:
 ```bash
 npm run build
 npm run lint
+```
+
+The `main` branch deploys automatically to GitHub Pages through GitHub Actions.
