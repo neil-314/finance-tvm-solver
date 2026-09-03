@@ -31,3 +31,14 @@ Cash flows use a standard sign convention: money received is positive, while mon
 - Responsive layout and accessible form labels
 
 ## Run locally
+
+```bash
+npm install
+npm run dev
+```
+
+To create and check a production build:
+
+```bash
+npm run build
+npm run lint
