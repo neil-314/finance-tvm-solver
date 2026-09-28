@@ -18,3 +18,5 @@ export function solve(target:Variable, x:Inputs) {
   let lo=-99, hi=100
   for(let i=0;i<120;i++){const mid=(lo+hi)/2; if(valueAt({...x,rate:mid})<x.fv) lo=mid; else hi=mid}
   return (lo+hi)/2
+}
+export const formulas:Record<Variable,string>={FV:'FV = PV(1 + r)ⁿ + PMT × [((1 + r)ⁿ − 1) / r] × d',PV:'PV = [FV − PMT × annuity factor] / (1 + r)ⁿ',PMT:'PMT = [FV − PV(1 + r)ⁿ] / annuity factor',RATE:'Solve r iteratively where PV(1 + r)ⁿ + PMT × annuity factor = FV',NPER:'Solve n iteratively where PV(1 + r)ⁿ + PMT × annuity factor = FV'}
