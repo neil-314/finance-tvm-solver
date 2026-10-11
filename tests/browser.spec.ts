@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 
 test('lesson checks teach signs and link into a practice question', async ({ page }) => {
   await page.goto('./')
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Understand the question')
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Time value')
   await page.getByRole('button', { name: 'Negative', exact: true }).click()
   await expect(page.getByRole('status')).toContainText('Not quite')
   await page.getByRole('button', { name: 'Positive', exact: true }).click()

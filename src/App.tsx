@@ -251,18 +251,19 @@ export default function App() {
             navigate('learn')
           }}
         >
-          <span aria-hidden="true">N</span>
           <div>
-            Neil’s TVM Lab<small>Learn time value of money</small>
+            <strong>TVM Study Desk</strong>
+            <small>Financial mathematics · learn & practise</small>
           </div>
         </a>
         <nav aria-label="Main navigation">
-          {(['learn', 'practice', 'calculator'] as Page[]).map((p) => (
+          {(['learn', 'practice', 'calculator'] as Page[]).map((p, index) => (
             <button
               key={p}
               aria-current={page === p ? 'page' : undefined}
               onClick={() => navigate(p)}
             >
+              <span aria-hidden="true">0{index + 1}</span>
               {p === 'calculator' ? 'Calculator trainer' : p === 'learn' ? 'Learn' : 'Practice'}
             </button>
           ))}
@@ -271,25 +272,53 @@ export default function App() {
       <main id="content">
         {page === 'learn' && (
           <>
-            <div className="section-intro">
-              <p className="eyebrow">A study companion for financial mathematics</p>
-              <h1>
-                Understand the question.
-                <br />
-                Then reach for the calculator.
-              </h1>
-              <p>
-                Learn to translate a money story into five TVM variables. Work through a short
-                lesson, attempt a question, then use the trainer to see what each calculator key
-                actually stores.
-              </p>
-              <div className="learning-path">
-                <span>01 Learn the idea</span>
-                <span aria-hidden="true">→</span>
-                <span>02 Try a question</span>
-                <span aria-hidden="true">→</span>
-                <span>03 Practise the keys</span>
+            <div className="section-intro study-intro">
+              <div className="intro-copy">
+                <p className="eyebrow">Finance workbook / Chapter 01</p>
+                <h1>
+                  Time value
+                  <br /> of money.
+                </h1>
+                <p>
+                  A dollar today and a dollar in three years are different financial choices. TVM
+                  puts cash flows on a common date so you can compare loans, savings and future
+                  payments.
+                </p>
+                <p className="fine">
+                  Start with a lesson. Work a problem. Check the calculator keys.
+                </p>
               </div>
+              <figure className="finance-example">
+                <figcaption>A small example / compound growth</figcaption>
+                <div className="example-flows">
+                  <div>
+                    <span>Invest today</span>
+                    <strong>−$1,000</strong>
+                    <small>PV · cash paid</small>
+                  </div>
+                  <div className="example-rate">
+                    5% a year
+                    <br />
+                    <span>3 years →</span>
+                  </div>
+                  <div>
+                    <span>Receive later</span>
+                    <strong>+$1,157.63</strong>
+                    <small>FV · cash received</small>
+                  </div>
+                </div>
+                <div className="example-years" aria-label="Three annual compounding periods">
+                  <span>0</span>
+                  <span>1</span>
+                  <span>2</span>
+                  <span>3 years</span>
+                </div>
+                <p>1,000 × (1.05)³ = 1,157.625</p>
+                <small>
+                  Annual compounding, no extra payments. The extra $157.63 is interest, including
+                  interest on interest.
+                </small>
+              </figure>
             </div>
             <details className="reference">
               <summary>The five variables, in plain language</summary>
@@ -346,8 +375,8 @@ export default function App() {
         {page === 'practice' && (
           <>
             <div className="section-intro compact">
-              <p className="eyebrow">Practice desk</p>
-              <h1>Try it before you reveal it.</h1>
+              <p className="eyebrow">Finance workbook / Problem set</p>
+              <h1>Work the numbers.</h1>
               <p>
                 Nine questions cover all five unknowns, loans, savings, payment timing and frequency
                 conversion. Progress lasts for this visit; no login or tracking.
@@ -391,7 +420,7 @@ export default function App() {
       </main>
       <footer>
         <div>
-          <b>Neil’s TVM Lab</b>
+          <b>TVM Study Desk</b>
           <p>
             An independent learning project. Constant rates, equal payments, one cash-flow
             perspective.
