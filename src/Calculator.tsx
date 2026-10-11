@@ -38,8 +38,8 @@ export default function Calculator({ example }: { example: Question }) {
   return (
     <div>
       <div className="section-intro">
-        <p className="eyebrow">Calculator trainer</p>
-        <h1>Learn the keys. See the memory.</h1>
+        <p className="eyebrow">Finance workbook / Calculator bench</p>
+        <h1>Financial calculator.</h1>
         <p>
           This trainer follows the store → CPT → variable workflow used by financial calculators. It
           supports the five TVM keys; settings are exposed directly to make them easier to learn.

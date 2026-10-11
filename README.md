@@ -1,6 +1,6 @@
-# Neil’s TVM Lab
+# TVM Study Desk
 
-A study companion for time value of money. Learn to translate a word problem into calculator inputs, attempt the answer yourself, and inspect the math behind it.
+A finance workbook for time value of money: compare cash flows at different dates, understand loans and savings, and learn financial-calculator methods. Translate a word problem into calculator inputs, attempt the answer yourself, and inspect the math behind it.
 
 **[Try the live app](https://neil-314.github.io/finance-tvm-solver/)** · No account, API key or paid service required.
 
