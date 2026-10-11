@@ -1,39 +1,414 @@
-import { useMemo, useState } from "react";
-import { formulas, solve, type Inputs, type Variable } from "./finance";
-import "./App.css";
-import "./education.css";
+import { useState } from 'react'
+import Calculator, { KeySequence } from './Calculator'
+import Explanation from './Explanation'
+import { solve } from './finance'
+import { lessons, questions, type Question } from './learning'
+import './App.css'
 
-const presets = {
-  Mortgage: { pv: 400000, fv: 0, pmt: -2530, rate: 5.2, periods: 25, compounds: 12, due: false },
-  Investment: { pv: 10000, fv: 0, pmt: 500, rate: 7, periods: 10, compounds: 12, due: false },
-  Retirement: { pv: 25000, fv: 0, pmt: 1000, rate: 6.5, periods: 30, compounds: 12, due: true },
-};
-const labels: { key: keyof Inputs; label: string; prefix?: string }[] = [
-  { key: "pv", label: "Present value", prefix: "$" }, { key: "fv", label: "Future value", prefix: "$" },
-  { key: "pmt", label: "Payment", prefix: "$" }, { key: "rate", label: "Annual interest", prefix: "%" }, { key: "periods", label: "Years" },
-];
-const targetKeys = { PV: "pv", FV: "fv", PMT: "pmt", RATE: "rate", NPER: "periods" } as const;
-const meanings = {
-  PV: "Present value: the amount you have or borrow today.", FV: "Future value: what the money will be worth at the end.",
-  PMT: "Payment: the repeating deposit or withdrawal each period.", RATE: "Rate: the annual percentage return or borrowing cost.",
-  NPER: "Number of periods: how many years the money grows or the loan lasts.",
-};
+type Page = 'learn' | 'practice' | 'calculator'
+
+function Lesson({
+  index,
+  onNext,
+  onPractice,
+  onCalculator,
+}: {
+  index: number
+  onNext: () => void
+  onPractice: (q: Question) => void
+  onCalculator: (q: Question) => void
+}) {
+  const [choice, setChoice] = useState<number | null>(null)
+  const lesson = lessons[index],
+    question = questions.find((q) => q.id === lesson.question)!
+  return (
+    <article className="lesson-content">
+      <p className="eyebrow">{lesson.tag}</p>
+      <h2>{lesson.title}</h2>
+      <p className="lesson-body">{lesson.body}</p>
+      <div className="rule">{lesson.rule}</div>
+      <div className="concept-check">
+        <h3>Quick check</h3>
+        <p>{lesson.check}</p>
+        <div className="button-row">
+          {lesson.options.map((option, i) => (
+            <button aria-pressed={choice === i} onClick={() => setChoice(i)} key={option}>
+              {option}
+            </button>
+          ))}
+        </div>
+        {choice !== null && (
+          <p
+            role="status"
+            className={`feedback ${choice === lesson.correct ? 'success' : 'error'}`}
+          >
+            {choice === lesson.correct ? 'Correct. ' : 'Not quite. '}
+            {lesson.feedback}
+          </p>
+        )}
+      </div>
+      <section className="lesson-example">
+        <p className="eyebrow">Apply it</p>
+        <h3>{question.title}</h3>
+        <p>{question.prompt}</p>
+        <div className="button-row">
+          <button className="primary" onClick={() => onPractice(question)}>
+            Try this question →
+          </button>
+          <button onClick={() => onCalculator(question)}>Open in calculator trainer</button>
+        </div>
+      </section>
+      {index < lessons.length - 1 && (
+        <button className="text-button next-lesson" onClick={onNext}>
+          Next lesson: {lessons[index + 1].title} →
+        </button>
+      )}
+    </article>
+  )
+}
+
+function Practice({
+  question,
+  onCalculator,
+  onComplete,
+  onNext,
+  revealed,
+  onReveal,
+}: {
+  question: Question
+  onCalculator: (q: Question) => void
+  onComplete: (id: string) => void
+  onNext: () => void
+  revealed: boolean
+  onReveal: () => void
+}) {
+  const [answer, setAnswer] = useState(''),
+    [hints, setHints] = useState(0)
+  const [feedback, setFeedback] = useState(''),
+    [correct, setCorrect] = useState(false)
+  const expected = solve(question.target, question.inputs)
+  const unit =
+    question.target === 'N'
+      ? 'payment periods'
+      : question.target === 'I/Y'
+        ? '% nominal annual interest (enter 10 for 10%)'
+        : 'CAD, with the cash-flow sign'
+  function check() {
+    const value = Number(answer)
+    if (!answer.trim() || !Number.isFinite(value)) {
+      setCorrect(false)
+      setFeedback('Enter a signed number without a currency symbol or commas.')
+      return
+    }
+    const tolerance = question.target === 'N' ? 0.0005 : question.target === 'I/Y' ? 0.0001 : 0.015
+    const right = Math.abs(value - expected) <= tolerance
+    setCorrect(right)
+    if (right) {
+      setFeedback(
+        revealed
+          ? 'That matches the solution. Try another question without revealing the answer.'
+          : 'Correct. Now read why it works below.',
+      )
+      if (!revealed) onComplete(question.id)
+    } else if (Math.abs(value + expected) <= tolerance)
+      setFeedback(
+        'Your magnitude is right, but the sign is reversed. Is this cash received or paid from the chosen perspective?',
+      )
+    else if (
+      question.target === 'N' &&
+      Math.abs(value * question.inputs.py - expected) <= tolerance
+    )
+      setFeedback(
+        'That looks like years. This question asks for N in payment periods: multiply years by P/Y.',
+      )
+    else
+      setFeedback(
+        'Not quite. Check the cash-flow signs, N, P/Y, C/Y and END/BGN. Use a hint to work through the setup.',
+      )
+  }
+  return (
+    <article className="practice-content">
+      <p className="eyebrow">
+        {question.topic} · Solve {question.target}
+      </p>
+      <h2>{question.title}</h2>
+      <p className="question-prompt">{question.prompt}</p>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          check()
+        }}
+        className="answer-form"
+      >
+        <label htmlFor="practice-answer">
+          Your answer for {question.target}
+          <span>{unit}</span>
+        </label>
+        <div className="button-row">
+          <input
+            id="practice-answer"
+            inputMode="decimal"
+            value={answer}
+            onChange={(e) => {
+              setAnswer(e.target.value)
+              setFeedback('')
+              setCorrect(false)
+            }}
+            autoComplete="off"
+            placeholder={
+              question.target === 'PMT' || question.target === 'PV'
+                ? 'e.g. −250 (use a minus sign)'
+                : 'Enter your answer'
+            }
+          />
+          <button className="primary" type="submit">
+            Check answer
+          </button>
+        </div>
+        <p className="fine">
+          Use a keyboard minus (− shown in text means -). Round money to cents, and rates or periods
+          to 4 decimal places.
+        </p>
+      </form>
+      {feedback && (
+        <p className={`feedback ${correct ? 'success' : 'error'}`} role="status">
+          {feedback}
+        </p>
+      )}
+      <div className="button-row practice-actions">
+        <button disabled={hints === question.hints.length} onClick={() => setHints(hints + 1)}>
+          Get a hint ({hints}/{question.hints.length})
+        </button>
+        <button onClick={() => onCalculator(question)}>Use calculator trainer</button>
+        <button className="text-button" onClick={onReveal}>
+          Show worked solution
+        </button>
+      </div>
+      {hints > 0 && (
+        <ol className="hints">
+          {question.hints.slice(0, hints).map((h) => (
+            <li key={h}>{h}</li>
+          ))}
+        </ol>
+      )}
+      {(correct || revealed) && (
+        <>
+          <p className="takeaway">
+            <b>What to notice:</b> {question.takeaway}
+          </p>
+          <Explanation values={question.inputs} target={question.target} />
+          <details className="reference">
+            <summary>Calculator keystrokes for this question</summary>
+            <KeySequence question={question} />
+          </details>
+          <button className="primary" onClick={onNext}>
+            Next question →
+          </button>
+        </>
+      )}
+      <p className="fine">
+        Hints are allowed. Revealing the solution does not count as solving the question yourself.
+      </p>
+    </article>
+  )
+}
 
 export default function App() {
-  const [target, setTarget] = useState<Variable>("FV");
-  const [inputs, setInputs] = useState<Inputs>(presets.Investment);
-  const result = useMemo(() => solve(target, inputs), [target, inputs]);
-  const isMoney = target !== "RATE" && target !== "NPER";
-  const formatResult = (value: number) => !Number.isFinite(value) ? "Check your inputs" : isMoney ? value.toLocaleString("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 2 }) : `${value.toFixed(2)}${target === "RATE" ? "%" : " years"}`;
-  return <main>
-    <header><div className="brand"><span>N</span> NEIL'S TVM LAB</div><div className="live">● EDUCATIONAL CALCULATOR</div></header>
-    <section className="hero"><p className="eyebrow">TIME VALUE OF MONEY, MADE SIMPLE</p><h1>See how money changes<br /><em>over time.</em></h1><p>This learning tool shows the answer, formula, and steps together so you can understand the math—not just get a number.</p></section>
-    <section className="quick-start" aria-labelledby="quick-start-title"><div><p className="eyebrow">START HERE</p><h2 id="quick-start-title">How to use the solver</h2></div><ol><li><b>Choose what is unknown.</b><span>Select PV, FV, PMT, RATE, or NPER.</span></li><li><b>Enter what you know.</b><span>Use positive numbers for money coming in and negative numbers for money going out.</span></li><li><b>Read the explanation.</b><span>Your result, formula, and substituted steps update instantly.</span></li></ol></section>
-    <section className="preset-row" aria-label="Example scenarios">{Object.entries(presets).map(([name, preset]) => <button onClick={() => setInputs(preset)} key={name}>↗ Try {name}</button>)}</section>
-    <div className="grid"><section className="panel"><p className="eyebrow">01 / SOLVE FOR</p><div className="targets">{(["PV", "FV", "PMT", "RATE", "NPER"] as Variable[]).map((variable) => <button key={variable} className={variable === target ? "active" : ""} onClick={() => setTarget(variable)}>{variable}</button>)}</div><p className="meaning">{meanings[target]}</p><div className="inputs">{labels.filter((item) => item.key !== targetKeys[target]).map((item) => <label key={item.key}>{item.label}<div><span>{item.prefix}</span><input aria-label={item.label} type="number" value={inputs[item.key] as number} onChange={(event) => setInputs({ ...inputs, [item.key]: Number(event.target.value) })} /></div></label>)}</div><div className="toggles"><label>Compounding<select value={inputs.compounds} onChange={(event) => setInputs({ ...inputs, compounds: Number(event.target.value) })}><option value="1">Annual</option><option value="12">Monthly</option></select></label><label>Payment timing<select value={inputs.due ? "due" : "ordinary"} onChange={(event) => setInputs({ ...inputs, due: event.target.value === "due" })}><option value="ordinary">End of period</option><option value="due">Beginning of period</option></select></label></div></section>
-    <aside className="result" aria-live="polite"><p className="eyebrow">CALCULATED {target}</p><h2>{formatResult(result)}</h2><p>Based on {inputs.periods} years at {inputs.rate}% annually</p><div className="formula"><small>FORMULA</small>{formulas[target]}</div>{Number.isFinite(result) && <ol><li>Periodic rate = {(inputs.rate / inputs.compounds).toFixed(4)}%</li><li>Total periods = {(inputs.periods * inputs.compounds).toFixed(0)}</li><li>Payment timing factor = {inputs.due ? "1 + r" : "1"}</li><li>Substitute values and solve → {formatResult(result)}</li></ol>}</aside></div>
-    <section className="timeline"><div className="timeline-title"><p className="eyebrow">CASH FLOW TIMELINE</p><span>{inputs.compounds === 12 ? "MONTHLY" : "ANNUAL"} COMPOUNDING</span></div><div className="line">{[0, 1, 2, 3, 4].map((_, index) => <div className="tick" key={index}><b>{index === 4 ? inputs.periods : Math.round(inputs.periods * index / 4)}Y</b><i></i><span>{index === 0 ? `PV ${inputs.pv.toLocaleString()}` : index === 4 ? `FV ${(target === "FV" ? result : inputs.fv).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : `PMT ${inputs.pmt.toLocaleString()}`}</span></div>)}</div></section>
-    <section className="learn-more"><p className="eyebrow">THE BIG IDEA</p><h2>A dollar today is usually worth more than a dollar later.</h2><p>Money available today can earn a return. TVM formulas connect five variables: present value, future value, recurring payments, interest rate, and time. If you know four, this solver estimates the fifth.</p><p><b>Sign convention:</b> cash you receive is positive; cash you contribute or repay is negative. Keeping opposite cash-flow directions makes the formulas work correctly.</p></section>
-    <footer>Built for learning and demonstration—not financial advice. <span>Values use Canadian dollars</span></footer>
-  </main>;
+  const [page, setPage] = useState<Page>('learn'),
+    [lesson, setLesson] = useState(0),
+    [questionId, setQuestionId] = useState(questions[0].id)
+  const [example, setExample] = useState(questions[0]),
+    [calculatorVersion, setCalculatorVersion] = useState(0)
+  const [solved, setSolved] = useState<Set<string>>(() => new Set())
+  const [revealed, setRevealed] = useState<Set<string>>(() => new Set())
+  const question = questions.find((q) => q.id === questionId)!
+  function openCalculator(q: Question) {
+    setExample(q)
+    setCalculatorVersion((v) => v + 1)
+    setPage('calculator')
+    window.scrollTo(0, 0)
+  }
+  function openPractice(q: Question) {
+    setQuestionId(q.id)
+    setPage('practice')
+    window.scrollTo(0, 0)
+  }
+  function navigate(next: Page) {
+    setPage(next)
+    window.scrollTo(0, 0)
+  }
+  return (
+    <div className="app">
+      <a className="skip-link" href="#content">
+        Skip to lesson
+      </a>
+      <header className="site-header">
+        <a
+          className="brand"
+          href="#"
+          onClick={(e) => {
+            e.preventDefault()
+            navigate('learn')
+          }}
+        >
+          <span aria-hidden="true">N</span>
+          <div>
+            Neil’s TVM Lab<small>Learn time value of money</small>
+          </div>
+        </a>
+        <nav aria-label="Main navigation">
+          {(['learn', 'practice', 'calculator'] as Page[]).map((p) => (
+            <button
+              key={p}
+              aria-current={page === p ? 'page' : undefined}
+              onClick={() => navigate(p)}
+            >
+              {p === 'calculator' ? 'Calculator trainer' : p === 'learn' ? 'Learn' : 'Practice'}
+            </button>
+          ))}
+        </nav>
+      </header>
+      <main id="content">
+        {page === 'learn' && (
+          <>
+            <div className="section-intro">
+              <p className="eyebrow">A study companion for financial mathematics</p>
+              <h1>
+                Understand the question.
+                <br />
+                Then reach for the calculator.
+              </h1>
+              <p>
+                Learn to translate a money story into five TVM variables. Work through a short
+                lesson, attempt a question, then use the trainer to see what each calculator key
+                actually stores.
+              </p>
+              <div className="learning-path">
+                <span>01 Learn the idea</span>
+                <span aria-hidden="true">→</span>
+                <span>02 Try a question</span>
+                <span aria-hidden="true">→</span>
+                <span>03 Practise the keys</span>
+              </div>
+            </div>
+            <details className="reference">
+              <summary>The five variables, in plain language</summary>
+              <dl className="glossary">
+                <dt>PV · Present value</dt>
+                <dd>The signed cash flow today: a loan received or money invested.</dd>
+                <dt>FV · Future value</dt>
+                <dd>
+                  The signed cash flow at time N, including a final withdrawal or remaining balance.
+                </dd>
+                <dt>PMT · Payment</dt>
+                <dd>
+                  An equal repeating cash flow each payment period. Use zero if there are none.
+                </dd>
+                <dt>N · Number of periods</dt>
+                <dd>The total number of payment periods, not the number of years.</dd>
+                <dt>I/Y · Interest per year</dt>
+                <dd>
+                  The nominal annual percentage rate, interpreted with the C/Y setting. It is not
+                  necessarily the effective annual rate.
+                </dd>
+              </dl>
+            </details>
+            <div className="study-layout">
+              <aside className="study-sidebar">
+                <p className="eyebrow">Five short lessons</p>
+                <nav aria-label="Lessons">
+                  {lessons.map((item, i) => (
+                    <button
+                      key={item.title}
+                      aria-current={lesson === i ? 'step' : undefined}
+                      onClick={() => setLesson(i)}
+                    >
+                      <span>0{i + 1}</span>
+                      {item.title}
+                    </button>
+                  ))}
+                </nav>
+                <p className="fine">
+                  New to TVM? Start with cash-flow signs. Comfortable already? Go straight to
+                  Practice.
+                </p>
+              </aside>
+              <Lesson
+                key={lesson}
+                index={lesson}
+                onNext={() => setLesson(lesson + 1)}
+                onPractice={openPractice}
+                onCalculator={openCalculator}
+              />
+            </div>
+          </>
+        )}
+        {page === 'practice' && (
+          <>
+            <div className="section-intro compact">
+              <p className="eyebrow">Practice desk</p>
+              <h1>Try it before you reveal it.</h1>
+              <p>
+                Nine questions cover all five unknowns, loans, savings, payment timing and frequency
+                conversion. Progress lasts for this visit; no login or tracking.
+              </p>
+              <p className="progress" role="status">
+                {solved.size} / {questions.length} solved without revealing the answer
+              </p>
+            </div>
+            <div className="study-layout">
+              <aside className="study-sidebar">
+                <nav aria-label="Practice questions">
+                  {questions.map((q, i) => (
+                    <button
+                      key={q.id}
+                      aria-current={q.id === questionId ? 'step' : undefined}
+                      onClick={() => setQuestionId(q.id)}
+                    >
+                      <span>{solved.has(q.id) ? '✓' : String(i + 1).padStart(2, '0')}</span>
+                      {q.title}
+                    </button>
+                  ))}
+                </nav>
+              </aside>
+              <Practice
+                key={question.id}
+                question={question}
+                revealed={revealed.has(question.id)}
+                onReveal={() => setRevealed((s) => new Set([...s, question.id]))}
+                onCalculator={openCalculator}
+                onComplete={(id) => setSolved((s) => new Set([...s, id]))}
+                onNext={() =>
+                  setQuestionId(questions[(questions.indexOf(question) + 1) % questions.length].id)
+                }
+              />
+            </div>
+          </>
+        )}
+        <div hidden={page !== 'calculator'}>
+          <Calculator key={calculatorVersion} example={example} />
+        </div>
+      </main>
+      <footer>
+        <div>
+          <b>Neil’s TVM Lab</b>
+          <p>
+            An independent learning project. Constant rates, equal payments, one cash-flow
+            perspective.
+          </p>
+        </div>
+        <div>
+          <a href="https://github.com/neil-314/finance-tvm-solver">Source & how it works ↗</a>
+          <a
+            href="https://education.ti.com/html/eguides/financials/baiiplus/en/Content/M_TVMA-WS/TVMA_Variables.HTML"
+            target="_blank"
+            rel="noreferrer"
+          >
+            TI TVM reference ↗
+          </a>
+          <span>Educational examples · no financial advice</span>
+        </div>
+      </footer>
+    </div>
+  )
 }
