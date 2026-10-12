@@ -12,7 +12,9 @@ A finance workbook for time value of money: compare cash flows at different date
 2. **Practice:** nine original questions cover PV, FV, PMT, N and I/Y, including loan payments, savings, annuities due, mixed frequencies and zero interest. Attempt a signed answer, ask for progressive hints, or reveal a worked solution. Feedback identifies reversed signs and, where relevant, confusion between years and periods.
 3. **Calculator trainer:** enter a number, press a variable key to store it, then press CPT and the unknown key. Visible registers and a key history explain what is happening. Load a known setup to experiment, or follow the manual keystroke guide.
 
-Practice completion is held only in memory for the current visit. Hints are allowed; revealed answers do not earn completion credit. Reloading resets progress. Calculator memory survives navigation between views, but resets when a new lesson/example is opened in the trainer or the page reloads. There are no accounts, analytics or server-side storage.
+Practice history and completion are saved on the learner’s device, with the last 100 attempts available for review, CSV download or reset. Hints are allowed; revealed answers do not earn completion. Storage failures fall back to the current visit. Calculator memory survives view changes but resets when a new example is loaded or the page reloads. Each lesson and question has a shareable URL, with browser back/forward support.
+
+Optional PostHog statistics measure anonymous-device activity after opt-in. No typed answers, calculator amounts or screen recordings are collected. See the [promotion and measurement guide](docs/promotion.md) for share links, event definitions, privacy details and honest launch goals.
 
 ## What the calculator models
 

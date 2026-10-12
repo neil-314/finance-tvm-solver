@@ -1037,3 +1037,68 @@ footer a {
     flex: 1;
   }
 }
+.study-tools {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid #d8d2c8;
+  padding: 12px 0;
+  font-size: 12px;
+  color: #635d54;
+}
+.usage-invitation {
+  font-size: 12px;
+  margin: 12px 0;
+  line-height: 1.7;
+}
+.usage-settings {
+  border-top: 1px solid #d8d2c8;
+  padding: 18px 0;
+  margin-top: 28px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.usage-settings p {
+  max-width: 760px;
+}
+.usage-settings label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.usage-settings input {
+  width: auto;
+}
+.study-history {
+  margin-bottom: 24px;
+}
+.history-scroll {
+  overflow-x: auto;
+}
+.study-history table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  text-align: left;
+}
+.study-history caption {
+  text-align: left;
+  padding: 12px 0;
+  font-weight: bold;
+}
+.study-history th,
+.study-history td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #d8d2c8;
+}
+@media (max-width: 600px) {
+  .study-tools {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .study-history table {
+    min-width: 560px;
+  }
+}

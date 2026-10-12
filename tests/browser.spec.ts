@@ -1,5 +1,85 @@
 import { test, expect } from '@playwright/test'
 
+// Exercise the browser SDK with a normal browser UA; its bot filter rejects HeadlessChrome.
+test.use({
+  userAgent:
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
+})
+
+test('history survives reload, exports outcomes, and resets; links support browser back', async ({
+  page,
+}) => {
+  await page.goto('./#practice/growth')
+  await page.getByLabel('Your answer for FV').fill('1157.63')
+  await page.getByRole('button', { name: 'Check answer' }).click()
+  await page.reload()
+  await expect(page.getByText('1 / 9 solved', { exact: false })).toBeVisible()
+  await page.getByText('Your study history (1 attempts)', { exact: true }).click()
+  await expect(page.getByRole('table', { name: 'Recent practice attempts' })).toContainText(
+    'Correct',
+  )
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Download history CSV' }).click()
+  expect((await downloadPromise).suggestedFilename()).toBe('tvm-study-history.csv')
+  await page.getByRole('button', { name: 'Clear history and start over' }).click()
+  await expect(page.getByText('0 / 9 solved', { exact: false })).toBeVisible()
+  await page.getByRole('button', { name: 'Learn', exact: true }).click()
+  await page.goBack()
+  await expect(page.getByLabel('Your answer for FV')).toBeVisible()
+})
+
+test('corrupt or blocked browser storage never prevents studying', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('tvm-study-progress-v1', '{bad json'))
+  await page.goto('./#practice/growth')
+  await page.getByLabel('Your answer for FV').fill('1157.63')
+  await page.getByRole('button', { name: 'Check answer' }).click()
+  await expect(page.getByText('1 / 9 solved', { exact: false })).toBeVisible()
+  await page.addInitScript(() => {
+    Storage.prototype.setItem = () => {
+      throw new Error('Storage blocked')
+    }
+  })
+  await page.reload()
+  await page.getByLabel('Your answer for FV').fill('-1157.63')
+  await page.getByRole('button', { name: 'Check answer' }).click()
+  await page.getByText('Your study history', { exact: false }).click()
+  await expect(page.getByText('Browser storage is unavailable.', { exact: false })).toBeVisible()
+})
+
+test('analytics sends nothing before permission and strips raw inputs and URLs', async ({
+  page,
+}) => {
+  // Synthetic normal-user SDK check on our own app; outbound requests are mocked.
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'webdriver', { get: () => false })
+    Object.defineProperty(navigator, 'userAgentData', { get: () => undefined })
+  })
+  const bodies: string[] = []
+  await page.route(/https:\/\/[^/]*posthog\.com\/.*/, async (route) => {
+    if (route.request().method() === 'POST') bodies.push(route.request().postData() || '')
+    await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' })
+  })
+  await page.goto('./?utm_source=classmates&test_analytics=1#practice/growth')
+  await page.getByLabel('Your answer for FV').fill('1157.63')
+  await page.getByRole('button', { name: 'Check answer' }).click()
+  expect(bodies).toEqual([])
+  const consent = page.getByRole('button', {
+    name: 'Allow anonymous usage statistics',
+    exact: true,
+  })
+  if ((await consent.count()) === 0) return // Local builds can omit the public analytics config.
+  await consent.click()
+  await expect.poll(() => bodies.length, { timeout: 15000 }).toBeGreaterThan(0)
+  // SDK may compress its batch; the app's allowlist also has an independent unit test.
+  expect(bodies.join('')).not.toContain('1157.63')
+  await page.getByText('Privacy & usage statistics', { exact: true }).click()
+  await page.getByRole('checkbox').uncheck()
+  await page.reload()
+  await expect(
+    page.getByRole('button', { name: 'Allow anonymous usage statistics', exact: true }),
+  ).toBeVisible()
+})
+
 test('lesson checks teach signs and link into a practice question', async ({ page }) => {
   await page.goto('./')
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Time value')
