@@ -25,7 +25,7 @@ If you're learning loans, savings or annuities, try one question and tell me whi
 
 ## Measure something useful
 
-Your private [PostHog project](https://us.posthog.com/project/659292/) receives events only after a visitor allows usage statistics. Use its activity list for a chronological event history and the usage dashboard for trends. A browser/device ID is not a verified person. Ad blockers, denied consent, cleared storage and multiple devices affect counts.
+Your private [TVM usage dashboard](https://us.posthog.com/project/659292/dashboard/2199041) shows visits, practice participation, outcomes, help use, calculator activity and seven-day return visits. [Activity history](https://us.posthog.com/project/659292/activity/events) shows individual events in time order. The project receives events only after a visitor allows usage statistics. Use its activity list for a chronological event history and the usage dashboard for trends. A browser/device ID is not a verified person. Ad blockers, denied consent, cleared storage and multiple devices affect counts.
 
 | Question | What to measure | Why it matters |
 | --- | --- | --- |
