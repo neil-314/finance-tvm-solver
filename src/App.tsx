@@ -572,10 +572,6 @@ export default function App() {
           </p>
         </div>
         <div>
-          <a href="https://github.com/neil-314/finance-tvm-solver">Source & how it works ↗</a>
-          <a href="https://github.com/neil-314/finance-tvm-solver/issues/new?title=Learning%20feedback">
-            Report a confusing step ↗
-          </a>
           <a
             href="https://education.ti.com/html/eguides/financials/baiiplus/en/Content/M_TVMA-WS/TVMA_Variables.HTML"
             target="_blank"

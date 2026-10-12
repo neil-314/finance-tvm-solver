@@ -2,7 +2,7 @@
 
 A finance workbook for time value of money: compare cash flows at different dates, understand loans and savings, and learn financial-calculator methods. Translate a word problem into calculator inputs, attempt the answer yourself, and inspect the math behind it.
 
-**[Try the live app](https://neil-314.github.io/finance-tvm-solver/)** · No account, API key or paid service required.
+**[Try the live app](https://tvm-study-desk.vercel.app/)** · No account, API key or paid service required.
 
 ![The lesson workspace](docs/learn.png)
 
@@ -83,7 +83,7 @@ npm run test:e2e               # Browser flows and phone-width checks
 npm run format                # Keep the source readable
 ```
 
-The browser suite starts a local server if necessary. It also refreshes the screenshots in `docs/`. GitHub Actions runs the math tests, lint, browser checks and production build before publishing `main` to GitHub Pages.
+The browser suite starts a local server if necessary. It also refreshes the screenshots in `docs/`. GitHub Actions runs the math tests, lint, browser checks and production build. Vercel deploys the connected main branch at https://tvm-study-desk.vercel.app/.
 
 ## Read the code in this order
 
@@ -107,3 +107,4 @@ Calculator conventions were checked against Texas Instruments’ own documentati
 - [TI: changing END/BGN, P/Y and C/Y on a physical BA II Plus](https://education.ti.com/en/customer-support/knowledge-base/financial-calculators/product-usage/11228)
 
 The independent tests include compound-growth reference values, a monthly loan payment, END/BGN equivalence, differing frequencies, zero and negative known rates, inverse consistency, impossible cases, overflow, register behavior and complete browser workflows.
+

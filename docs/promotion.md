@@ -10,10 +10,10 @@ Post only where project sharing is welcome, and describe it honestly as an indep
 
 Use a different link for each channel. Labels are deliberately simple and contain no personal information.
 
-- Classmates: https://neil-314.github.io/finance-tvm-solver/?utm_source=classmates&utm_medium=share&utm_campaign=first_launch
-- Reddit: https://neil-314.github.io/finance-tvm-solver/?utm_source=reddit&utm_medium=community&utm_campaign=first_launch
-- LinkedIn: https://neil-314.github.io/finance-tvm-solver/?utm_source=linkedin&utm_medium=social&utm_campaign=first_launch
-- A direct practice challenge: https://neil-314.github.io/finance-tvm-solver/?utm_source=classmates&utm_medium=share&utm_campaign=first_problem#practice/growth
+- Classmates: https://tvm-study-desk.vercel.app/?utm_source=classmates&utm_medium=share&utm_campaign=first_launch
+- Reddit: https://tvm-study-desk.vercel.app/?utm_source=reddit&utm_medium=community&utm_campaign=first_launch
+- LinkedIn: https://tvm-study-desk.vercel.app/?utm_source=linkedin&utm_medium=social&utm_campaign=first_launch
+- A direct practice challenge: https://tvm-study-desk.vercel.app/?utm_source=classmates&utm_medium=share&utm_campaign=first_problem#practice/growth
 
 ## A short post you can adapt
 
