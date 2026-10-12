@@ -1,11 +1,30 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Calculator, { KeySequence } from './Calculator'
 import Explanation from './Explanation'
 import { solve } from './finance'
 import { lessons, questions, type Question } from './learning'
+import { addAttempt, emptyProgress, readProgress, saveProgress, type Attempt } from './progress'
+import { analyticsChoice, analyticsConfigured, setAnalytics, track } from './analytics'
+import StudyHistory from './StudyHistory'
 import './App.css'
 
 type Page = 'learn' | 'practice' | 'calculator'
+
+function writeHash(value: string) {
+  window.location.assign(value)
+}
+
+function readRoute() {
+  const [page, id] = location.hash.slice(1).split('/')
+  return {
+    page: (['learn', 'practice', 'calculator'].includes(page) ? page : 'learn') as Page,
+    lesson: Math.max(
+      0,
+      lessons.findIndex((item) => item.question === id),
+    ),
+    question: questions.find((q) => q.id === id)?.id || questions[0].id,
+  }
+}
 
 function Lesson({
   index,
@@ -32,7 +51,17 @@ function Lesson({
         <p>{lesson.check}</p>
         <div className="button-row">
           {lesson.options.map((option, i) => (
-            <button aria-pressed={choice === i} onClick={() => setChoice(i)} key={option}>
+            <button
+              aria-pressed={choice === i}
+              onClick={() => {
+                setChoice(i)
+                void track('lesson_checked', {
+                  lesson: lesson.question,
+                  correct: i === lesson.correct,
+                })
+              }}
+              key={option}
+            >
               {option}
             </button>
           ))}
@@ -70,14 +99,14 @@ function Lesson({
 function Practice({
   question,
   onCalculator,
-  onComplete,
+  onAttempt,
   onNext,
   revealed,
   onReveal,
 }: {
   question: Question
   onCalculator: (q: Question) => void
-  onComplete: (id: string) => void
+  onAttempt: (attempt: Attempt) => void
   onNext: () => void
   revealed: boolean
   onReveal: () => void
@@ -103,13 +132,25 @@ function Practice({
     const tolerance = question.target === 'N' ? 0.0005 : question.target === 'I/Y' ? 0.0001 : 0.015
     const right = Math.abs(value - expected) <= tolerance
     setCorrect(right)
+    onAttempt({
+      question: question.id,
+      at: new Date().toISOString(),
+      correct: right,
+      hints,
+      revealed,
+    })
+    void track('practice_attempted', {
+      question: question.id,
+      correct: right,
+      hints,
+      solution_revealed: revealed,
+    })
     if (right) {
       setFeedback(
         revealed
           ? 'That matches the solution. Try another question without revealing the answer.'
           : 'Correct. Now read why it works below.',
       )
-      if (!revealed) onComplete(question.id)
     } else if (Math.abs(value + expected) <= tolerance)
       setFeedback(
         'Your magnitude is right, but the sign is reversed. Is this cash received or paid from the chosen perspective?',
@@ -176,7 +217,13 @@ function Practice({
         </p>
       )}
       <div className="button-row practice-actions">
-        <button disabled={hints === question.hints.length} onClick={() => setHints(hints + 1)}>
+        <button
+          disabled={hints === question.hints.length}
+          onClick={() => {
+            setHints(hints + 1)
+            void track('practice_hinted', { question: question.id, hint: hints + 1 })
+          }}
+        >
           Get a hint ({hints}/{question.hints.length})
         </button>
         <button onClick={() => onCalculator(question)}>Use calculator trainer</button>
@@ -214,27 +261,60 @@ function Practice({
 }
 
 export default function App() {
-  const [page, setPage] = useState<Page>('learn'),
-    [lesson, setLesson] = useState(0),
-    [questionId, setQuestionId] = useState(questions[0].id)
-  const [example, setExample] = useState(questions[0]),
+  const [route, setRoute] = useState(readRoute)
+  const { page, lesson, question: questionId } = route
+  function go(next: Page, id = questionId) {
+    writeHash(`#${next}/${id}`)
+    window.scrollTo(0, 0)
+  }
+  const setLesson = (index: number) => go('learn', lessons[index].question)
+  const setQuestionId = (id: string) => go('practice', id)
+  useEffect(() => {
+    const changed = () => setRoute(readRoute())
+    window.addEventListener('hashchange', changed)
+    return () => window.removeEventListener('hashchange', changed)
+  }, [])
+  const [example, setExample] = useState(
+      () => questions.find((q) => q.id === questionId) || questions[0],
+    ),
     [calculatorVersion, setCalculatorVersion] = useState(0)
-  const [solved, setSolved] = useState<Set<string>>(() => new Set())
-  const [revealed, setRevealed] = useState<Set<string>>(() => new Set())
+  const [progress, setProgress] = useState(readProgress)
+  const [studyVersion, setStudyVersion] = useState(0)
+  const [saved, setSaved] = useState(true)
+  const [usage, setUsage] = useState(analyticsChoice)
+  const [linkCopied, setLinkCopied] = useState(false)
+  const solved = new Set(progress.solved),
+    revealed = new Set(progress.revealed)
+  function updateProgress(next: typeof progress) {
+    setProgress(next)
+    setSaved(saveProgress(next))
+  }
+  useEffect(() => {
+    let active = true
+    void setAnalytics(usage).then(() => {
+      if (active && usage)
+        void track('study_viewed', {
+          page,
+          item: page === 'learn' ? lessons[lesson].question : questionId,
+        })
+    })
+    return () => {
+      active = false
+    }
+  }, [usage, page, lesson, questionId])
   const question = questions.find((q) => q.id === questionId)!
   function openCalculator(q: Question) {
     setExample(q)
     setCalculatorVersion((v) => v + 1)
-    setPage('calculator')
+    go('calculator', q.id)
     window.scrollTo(0, 0)
   }
   function openPractice(q: Question) {
-    setQuestionId(q.id)
-    setPage('practice')
+    go('practice', q.id)
     window.scrollTo(0, 0)
   }
   function navigate(next: Page) {
-    setPage(next)
+    go(next, next === 'learn' ? lessons[lesson].question : questionId)
     window.scrollTo(0, 0)
   }
   return (
@@ -270,6 +350,32 @@ export default function App() {
         </nav>
       </header>
       <main id="content">
+        {analyticsConfigured && !usage && (
+          <p className="usage-invitation">
+            Help improve the workbook:{' '}
+            <button className="text-button" onClick={() => setUsage(true)}>
+              Allow anonymous usage statistics
+            </button>
+            . Optional; details below.
+          </p>
+        )}
+        <div className="study-tools">
+          <span>Free workbook · 5 lessons · 9 practice questions</span>
+          <button
+            className="text-button"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(location.href)
+                setLinkCopied(true)
+                setTimeout(() => setLinkCopied(false), 2500)
+              } catch {
+                setLinkCopied(false)
+              }
+            }}
+          >
+            {linkCopied ? 'Link copied' : 'Copy link to this page'}
+          </button>
+        </div>
         {page === 'learn' && (
           <>
             <div className="section-intro study-intro">
@@ -379,12 +485,21 @@ export default function App() {
               <h1>Work the numbers.</h1>
               <p>
                 Nine questions cover all five unknowns, loans, savings, payment timing and frequency
-                conversion. Progress lasts for this visit; no login or tracking.
+                conversion. Your progress and recent attempts are saved on this device. No login
+                needed.
               </p>
               <p className="progress" role="status">
                 {solved.size} / {questions.length} solved without revealing the answer
               </p>
             </div>
+            <StudyHistory
+              progress={progress}
+              saved={saved}
+              onReset={() => {
+                updateProgress(emptyProgress())
+                setStudyVersion((v) => v + 1)
+              }}
+            />
             <div className="study-layout">
               <aside className="study-sidebar">
                 <nav aria-label="Practice questions">
@@ -401,12 +516,18 @@ export default function App() {
                 </nav>
               </aside>
               <Practice
-                key={question.id}
+                key={`${question.id}-${studyVersion}`}
                 question={question}
                 revealed={revealed.has(question.id)}
-                onReveal={() => setRevealed((s) => new Set([...s, question.id]))}
+                onReveal={() => {
+                  updateProgress({
+                    ...progress,
+                    revealed: [...new Set([...progress.revealed, question.id])],
+                  })
+                  void track('practice_revealed', { question: question.id })
+                }}
                 onCalculator={openCalculator}
-                onComplete={(id) => setSolved((s) => new Set([...s, id]))}
+                onAttempt={(attempt) => updateProgress(addAttempt(progress, attempt))}
                 onNext={() =>
                   setQuestionId(questions[(questions.indexOf(question) + 1) % questions.length].id)
                 }
@@ -418,6 +539,30 @@ export default function App() {
           <Calculator key={calculatorVersion} example={example} />
         </div>
       </main>
+      <section className="usage-settings" aria-label="Privacy and usage statistics">
+        <details>
+          <summary>Privacy & usage statistics</summary>
+          <p>
+            Practice history stays in this browser. If you allow usage statistics, PostHog receives
+            anonymous-device lesson views, answer outcomes, hint use and calculator completion
+            events. We never send your typed answers or calculator amounts. No screen recordings,
+            names or email addresses. The anonymous device ID can link returning visits; it does not
+            identify a person.
+          </p>
+          {analyticsConfigured ? (
+            <label>
+              <input type="checkbox" checked={usage} onChange={(e) => setUsage(e.target.checked)} />{' '}
+              Allow anonymous usage statistics to improve this workbook
+            </label>
+          ) : (
+            <p>Remote usage statistics are not configured.</p>
+          )}
+          <p>
+            Optional. You can turn this off at any time. Browser privacy settings and blockers may
+            prevent collection.
+          </p>
+        </details>
+      </section>
       <footer>
         <div>
           <b>TVM Study Desk</b>
@@ -428,6 +573,9 @@ export default function App() {
         </div>
         <div>
           <a href="https://github.com/neil-314/finance-tvm-solver">Source & how it works ↗</a>
+          <a href="https://github.com/neil-314/finance-tvm-solver/issues/new?title=Learning%20feedback">
+            Report a confusing step ↗
+          </a>
           <a
             href="https://education.ti.com/html/eguides/financials/baiiplus/en/Content/M_TVMA-WS/TVMA_Variables.HTML"
             target="_blank"

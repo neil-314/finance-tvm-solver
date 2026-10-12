@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { track } from './analytics'
 import { initialCalculator, press, settings } from './calculatorState'
 import { fields, keys } from './finance'
 import { questions, type Question } from './learning'
@@ -34,7 +35,13 @@ export default function Calculator({ example }: { example: Question }) {
   const [selected, setSelected] = useState(example.id)
   const [state, setState] = useState(() => initialCalculator())
   const question = questions.find((q) => q.id === selected)!
-  const hit = (key: string) => setState((s) => press(s, key))
+  const hit = (key: string) => {
+    const next = press(state, key)
+    setState(next)
+    if (state.mode === 'compute' && keys.includes(key as (typeof keys)[number])) {
+      void track('calculator_computed', { target: key, success: !next.error })
+    }
+  }
   return (
     <div>
       <div className="section-intro">
