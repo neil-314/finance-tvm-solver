@@ -92,6 +92,10 @@ export default function Calculator({ example }: { example: Question }) {
               </button>
             ))}
           </div>
+          <p className="device-note">
+            I/Y is the annual percentage rate: enter 6 for 6%, not 0.06. Set P/Y and C/Y below; the
+            trainer converts the annual rate to a rate per payment period.
+          </p>
           <div className="function-keys">
             <button aria-pressed={state.mode === 'compute'} onClick={() => hit('CPT')}>
               CPT

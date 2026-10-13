@@ -183,6 +183,14 @@ test('phone layout fits without horizontal scrolling across all views', async ({
     await page.getByRole('button', { name: view, exact: true }).click()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   }
+  await expect(page.getByText(/I\/Y is the annual percentage rate/)).toBeVisible()
+  const decimal = page.locator('.number-keys').getByRole('button', { name: '.', exact: true })
+  const bounds = await decimal.boundingBox()
+  expect(bounds!.height).toBeGreaterThanOrEqual(48)
+  expect(bounds!.width).toBeGreaterThanOrEqual(48)
+  await decimal.click()
+  await page.locator('.number-keys').getByRole('button', { name: '5', exact: true }).click()
+  await expect(page.getByRole('textbox', { name: 'Calculator entry' })).toHaveValue('0.5')
 })
 
 test('save current documentation screenshots', async ({ page }) => {

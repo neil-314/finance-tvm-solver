@@ -669,6 +669,8 @@ h3 {
   gap: 5px;
 }
 .calculator-device button:not(.text-button) {
+  min-height: 48px;
+  touch-action: manipulation;
   padding: 12px 5px;
   border: 1px solid #252e35;
   border-radius: 3px;
@@ -695,9 +697,10 @@ h3 {
 .number-keys {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 7px;
+  gap: 12px;
 }
 .number-keys button {
+  min-height: 54px !important;
   font-size: 16px !important;
 }
 .number-keys button:nth-last-child(2) {
